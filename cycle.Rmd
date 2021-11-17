@@ -1,0 +1,172 @@
+---
+title: "Cylistics"
+author: "Sourabh Kumar"
+date: "11/16/2021"
+output: html_document
+---
+
+
+##Load the library
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(data.table)
+library(ggthemes)
+library(readr)
+```
+## Get the directories and set as well
+```{r}
+getwd()
+setwd( "C:/Users/subha/Desktop/Case Study/casestudy")
+```
+##Load the files 
+```{r}
+apr20<- read_csv("C:/Users/subha/Desktop/Case Study/google/202004-divvy-tripdata.csv")
+may20 <- read_csv("C:/Users/subha/Desktop/Case Study/google/202005-divvy-tripdata.csv")
+june20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202006-divvy-tripdata.csv")
+july20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202007-divvy-tripdata.csv")
+aug20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202008-divvy-tripdata.csv")
+sep20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202009-divvy-tripdata.csv")
+oct20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202010-divvy-tripdata.csv")
+nov20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202011-divvy-tripdata.csv")
+dec20 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202012-divvy-tripdata.csv")
+jan21 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202101-divvy-tripdata.csv")
+feb21 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202102-divvy-tripdata.csv")
+mar21 <-  read_csv("C:/Users/subha/Desktop/Case Study/google/202103-divvy-tripdata.csv")
+
+```
+##Check the column names of files
+```{r echo=TRUE}
+colnames(apr20)
+colnames(may20)
+colnames(june20)
+colnames(july20)
+colnames(aug20)
+colnames(sep20)
+colnames(oct20)
+colnames(nov20)
+colnames(dec20)
+colnames(jan21)
+colnames(feb21)
+colnames(mar21)
+```
+### Takes list, vector or data frame as input and gives output in vector or matrix with the help of sapply().
+```{r echo=TRUE}
+sapply(apr20, typeof)
+sapply(may20,typeof)
+sapply(june20, typeof)
+sapply(july20, typeof)
+sapply(aug20, typeof)
+sapply(sep20, typeof)
+sapply(oct20, typeof)
+sapply(nov20, typeof)
+sapply(dec20, typeof)
+sapply(jan21, typeof)
+sapply(feb21, typeof)
+sapply(mar21, typeof)
+```
+##Change the data types
+```{r}
+dec20 <- mutate(dec20, start_station_id = as.double(start_station_id),
+end_station_id = as.double(end_station_id))
+jan21 <- mutate(jan21, start_station_id = as.double(start_station_id),
+end_station_id = as.double(end_station_id))
+feb21 <- mutate(feb21, start_station_id = as.double(start_station_id),
+end_station_id = as.double(end_station_id))
+mar21 <- mutate(mar21, start_station_id = as.double(start_station_id),
+end_station_id = as.double(end_station_id))
+```
+##Re-check the data types
+```{r echo=TRUE}
+is.double(dec20$start_station_id)
+is.double(dec20$end_station_id)
+is.double(jan21$start_station_id)
+is.double(jan21$end_station_id)
+is.double(feb21$start_station_id)
+is.double(feb21$end_station_id)
+is.double(mar21$start_station_id)
+is.double(mar21$end_station_id)
+```
+##Bind all the files into one.
+```{r}
+all_bike_trips <- bind_rows(apr20,may20,june20,july20,aug20,sep20,oct20,nov20,
+dec20,jan21,feb21,mar21)
+```
+##Check the new file
+```{r echo=TRUE}
+summary(all_bike_trips)
+dim(all_bike_trips)
+```
+## Rename some column names for better readability
+```{r}
+all_bike_trips <- all_bike_trips %>% rename(
+type_of_ride = rideable_type,
+start_time = started_at,
+end_time = ended_at,
+type_of_member = member_casual)
+```
+## Re-check the file
+```{r echo=TRUE}
+str(all_bike_trips)
+```
+## Add a column called ride length to find total trip duration in minutes
+```{r}
+all_bike_trips$ride_length <- (as.double(difftime(all_bike_trips$end_time,
+all_bike_trips$start_time))) / 60
+```
+```{r echo=TRUE}
+glimpse(all_bike_trips)
+```
+##Check null values
+```{r}
+sum(all_bike_trips$ride_length < 0)
+```
+```{r}
+all_bike_trips_v2 <- all_bike_trips[!(all_bike_trips$ride_length < 0),]
+all_bike_trips_v2<- all_bike_trips_v2[!((all_bike_trips_v2$start_station_name %like% "TEST" |
+all_bike_trips_v2$start_station_name %like% "test" |
+all_bike_trips_v2$start_station_name %like% "Test")),]
+```
+```{r}
+all_bike_trips_v2 <- all_bike_trips_v2 %>% select(-c(start_lat:end_lng))
+```
+##Check the data
+```{r echo=TRUE}
+glimpse(all_bike_trips_v2)
+```
+```{r}
+all_bike_trips_v2$date <- as.Date(all_bike_trips_v2$start_time) ### The default is yyyy/mm/dd
+```
+```{r}
+all_bike_trips_v2$month <- format(as.Date(all_bike_trips_v2$date), "%b_%Y")
+```
+```{r}
+all_bike_trips_v2$day <- format(as.Date(all_bike_trips_v2$date), "%d") ###dd
+```
+```{r}
+all_bike_trips_v2$year <- format(as.Date(all_bike_trips_v2$date), "%Y") ###yyyy
+```
+```{r}
+all_bike_trips_v2$day_of_week <- format(as.Date(all_bike_trips_v2$date), "%a") ###Sun, Mon
+```
+## We have to use POSIXct object when dealing with times
+## We are first striping the date and just leaving the time, this get formatted as a chr
+```{r}
+all_bike_trips_v2$time <- format(as.POSIXct(all_bike_trips_v2$start_time), format = "%H:%M")
+```
+## We then the time column into format - POSIXct, however we still will get a date, but this will just be our current date, so if we want to use this time column we just need to reformat it when used in a visualizations
+```{r}
+all_bike_trips_v2$time <- as.POSIXct(all_bike_trips_v2$time, format = "%H:%M")
+```
+## Check our data set for NA (null) values
+```{r echo=TRUE}
+sum(is.na(all_bike_trips_v2) == FALSE) ## Returns sum of non NA values
+sum(is.na(all_bike_trips_v2) == TRUE) ## Returns sum of NA values
+```
+## 1057208 (total NA values) is 2.03 % of 52132260 (total values)
+```{r echo=TRUE}
+summary(all_bike_trips_v2)
+```
+
+#From here We can visualize the data with the help of tableau
